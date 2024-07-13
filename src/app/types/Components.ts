@@ -1,4 +1,4 @@
-import { SwapResult, Token } from './Token';
+import { SelectTokenType, SwapResult, Token } from './Token';
 import { SwapParams } from './Swap';
 import { Keypair } from '@solana/web3.js';
 import { IconType } from 'react-icons';
@@ -45,14 +45,21 @@ export interface WalletScreenProps {
 }
 
 export interface CurrencyInputProps {
-    selectedCurrency: string;
+    selectedCurrency: SelectTokenType;
     onCurrencyClick: () => void;
     onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     amount: string;
     onMaxClick?: () => void;
+    inSufficient?: boolean
     disabled?: boolean;
 }
 
 export interface CurrencyDropdownProps {
-    onSelect: (currency: string) => void;
+    onSelect: (token: SelectTokenType) => void;
+    tokens: Token[];
+}
+
+
+export interface TokenDetailsProps {
+    symbol: string;
 }

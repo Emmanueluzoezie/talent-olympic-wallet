@@ -1,143 +1,176 @@
-jest.mock('@solana/web3.js', () => {
-  const original = jest.requireActual('@solana/web3.js');
-  return {
-    ...original,
-    Connection: jest.fn(),
-    PublicKey: jest.fn().mockImplementation((key) => ({
-      toBase58: () => key,
-      equals: jest.fn(),
-      toBuffer: () => Buffer.from(key),
-    })),
-    Keypair: {
-      generate: jest.fn().mockReturnValue({
-        publicKey: { toBase58: () => 'mocked-public-key' },
-        secretKey: new Uint8Array(32),
-      }),
-      fromSecretKey: jest.fn().mockImplementation((secretKey) => ({
-        publicKey: { toBase58: () => 'mocked-public-key' },
-        secretKey,
-      })),
-    },
-    Transaction: jest.fn().mockImplementation(() => ({
-      add: jest.fn(),
-      feePayer: null,
-    })),
-    sendAndConfirmTransaction: jest.fn(),
-  };
-});
+// whirlpoolSwap.test.ts
 
-import { Connection, PublicKey, Keypair, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
-import { WhirlpoolContext, PDAUtil, TickArrayUtil, buildWhirlpoolClient } from '@orca-so/whirlpools-sdk';
-import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { Connection, Keypair, PublicKey } from '@solana/web3.js';
+import * as web3 from '@solana/web3.js';
 import { encryptPassword } from '../utils/PasswordEncryption';
 import { decryptSecretKey } from '../utils/Encryption';
 import generateKeypairFromSeedPhrase from '../utils/getKeypair';
-import { executeSwap } from '../utils/whirlpoolSwap';  // Adjust this import path as needed
+import { executeSwap } from '../utils/whirlpoolSwap';
 
-jest.mock('@solana/web3.js');
-jest.mock('@orca-so/whirlpools-sdk');
+// Mocking dependencies
+jest.mock('@solana/web3.js', () => {
+  const actual = jest.requireActual('@solana/web3.js');
+  return {
+    ...actual,
+    PublicKey: jest.fn().mockImplementation((key) => ({
+      toBase58: () => key,
+      equals: jest.fn().mockReturnValue(true),
+      toString: () => key,
+    })),
+    sendAndConfirmTransaction: jest.fn().mockResolvedValue('mockSignature'),
+    Keypair: {
+      fromSecretKey: jest.fn().mockReturnValue({
+        publicKey: { toBase58: () => 'mockPublicKey' },
+      }),
+    },
+  };
+});
+
+jest.mock('@project-serum/anchor', () => ({
+  Program: jest.fn().mockReturnValue({
+    methods: {
+      swap: jest.fn().mockReturnValue({
+        accounts: jest.fn().mockReturnValue({
+          instruction: jest.fn().mockResolvedValue('mockInstruction'),
+        }),
+      }),
+    },
+  }),
+  AnchorProvider: {
+    defaultOptions: jest.fn().mockReturnValue({}),
+  },
+  web3: {
+    Keypair: {
+      generate: jest.fn().mockReturnValue({ publicKey: new web3.PublicKey('mockPublicKey') }),
+    },
+  },
+}));
+
+jest.mock('@orca-so/whirlpools-sdk', () => ({
+  WhirlpoolContext: {
+    from: jest.fn().mockReturnValue({
+      getPool: jest.fn().mockResolvedValue({
+        getData: jest.fn().mockReturnValue({
+          tickCurrentIndex: 0,
+          tickSpacing: 1,
+          tokenVaultA: new web3.PublicKey('vaultA'),
+          tokenVaultB: new web3.PublicKey('vaultB'),
+          tokenMintA: new web3.PublicKey('mintA'),
+        }),
+        getTokenAInfo: jest.fn().mockReturnValue({ mint: new web3.PublicKey('mintA') }),
+        getAddress: jest.fn().mockReturnValue(new web3.PublicKey('address')),
+      }),
+    }),
+  },
+  PDAUtil: {
+    getWhirlpool: jest.fn().mockReturnValue({ publicKey: new web3.PublicKey('whirlpool') }),
+  },
+  TickArrayUtil: {
+    getTickArrayPDAs: jest.fn().mockReturnValue([
+      { publicKey: new web3.PublicKey('tickArray0') },
+      { publicKey: new web3.PublicKey('tickArray1') },
+      { publicKey: new web3.PublicKey('tickArray2') },
+    ]),
+  },
+  buildWhirlpoolClient: jest.fn().mockReturnValue({}),
+}));
+
+jest.mock('@solana/spl-token', () => ({
+  TOKEN_PROGRAM_ID: new web3.PublicKey('tokenProgramId'),
+}));
+
 jest.mock('../utils/PasswordEncryption');
 jest.mock('../utils/Encryption');
 jest.mock('../utils/getKeypair');
 
-const mockLocalStorage = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  clear: jest.fn()
-};
-Object.defineProperty(global, 'localStorage', { value: mockLocalStorage });
+describe('whirlpoolSwap', () => {
+  // Setup mock data
+  const mockConnection = {} as Connection;
+  const mockPublicKey = new web3.PublicKey('11111111111111111111111111111111');
+  const mockProgramId = new web3.PublicKey('22222222222222222222222222222222');
+  const mockFromTokenAddress = new web3.PublicKey('33333333333333333333333333333333');
+  const mockToTokenAddress = new web3.PublicKey('44444444444444444444444444444444');
+  const mockAmount = '10';
+  const mockSeedPhrase = 'test seed phrase';
+  const mockPassword = 'testPassword';
+  const mockEncryptedPassword = 'encryptedPassword';
+  const mockEncryptedSeedPhrase = 'encryptedSeedPhrase';
+  const mockProjectId = 'testProjectId';
 
-describe('executeSwap', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.NEXT_PUBLIC_PROJECT_KEY = 'test-project-key';
-    mockLocalStorage.getItem
-      .mockReturnValueOnce('encrypted-seed-phrase')
-      .mockReturnValueOnce('wallet-public-key')
-      .mockReturnValueOnce('encrypted-password');
-    
-    (encryptPassword.decrypt as jest.Mock).mockResolvedValue('decrypted-password');
-    (decryptSecretKey as jest.Mock).mockResolvedValue('decrypted-seed-phrase');
-    (generateKeypairFromSeedPhrase as jest.Mock).mockResolvedValue({ secretKey: new Uint8Array(32) });
 
-    (WhirlpoolContext.from as jest.Mock).mockReturnValue({});
-    (buildWhirlpoolClient as jest.Mock).mockReturnValue({
-      getPool: jest.fn().mockResolvedValue({
-        getTokenAInfo: () => ({ mint: new PublicKey('tokenA') }),
-        getData: () => ({
-          tickCurrentIndex: 0,
-          tickSpacing: 64,
-          tokenVaultA: new PublicKey('vaultA'),
-          tokenVaultB: new PublicKey('vaultB'),
-          tokenMintA: new PublicKey('tokenA')
+    // Setup localStorage mock
+    Object.defineProperty(window, 'localStorage', {
+      value: {
+        getItem: jest.fn().mockImplementation((key) => {
+          if (key === 'encryptedSeedPhrase') return mockEncryptedSeedPhrase;
+          if (key === 'walletPublicKey') return mockPublicKey.toString();
+          if (key === 'encryptedPassword') return mockEncryptedPassword;
+          return null;
         }),
-        getAddress: () => new PublicKey('oracle')
-      })
+        setItem: jest.fn(),
+      },
+      writable: true,
     });
-    (PDAUtil.getWhirlpool as jest.Mock).mockReturnValue({ publicKey: new PublicKey('whirlpool') });
-    (TickArrayUtil.getTickArrayPDAs as jest.Mock).mockReturnValue([
-      { publicKey: new PublicKey('tickArray0') },
-      { publicKey: new PublicKey('tickArray1') },
-      { publicKey: new PublicKey('tickArray2') }
-    ]);
+
+    // Setup environment variable mock
+    process.env.NEXT_PUBLIC_PROJECT_KEY = mockProjectId;
+
+    // Mock the encryption/decryption functions
+    (encryptPassword.decrypt as jest.Mock).mockResolvedValue(mockPassword);
+    (decryptSecretKey as jest.Mock).mockResolvedValue(mockSeedPhrase);
+
+    // Mock the generateKeypairFromSeedPhrase function
+    (generateKeypairFromSeedPhrase as jest.Mock).mockResolvedValue(Keypair.generate());
   });
 
   it('should execute a swap successfully', async () => {
-    const connection = new Connection('') as jest.Mocked<Connection>;
-    const publicKey = new PublicKey('test-public-key');
-    const programId = new PublicKey('test-program-id');
-    const fromTokenAddress = new PublicKey('from-token');
-    const toTokenAddress = new PublicKey('to-token');
-    const amount = '100';
-
-    (sendAndConfirmTransaction as jest.Mock).mockResolvedValue('test-signature');
-
-    const result = await executeSwap(
-      connection,
-      publicKey,
-      programId,
-      fromTokenAddress,
-      toTokenAddress,
-      amount
+    const signature = await executeSwap(
+      mockConnection,
+      mockPublicKey,
+      mockProgramId,
+      mockFromTokenAddress,
+      mockToTokenAddress,
+      mockAmount
     );
 
-    expect(result).toBe('test-signature');
-    expect(sendAndConfirmTransaction).toHaveBeenCalled();
-    expect(mockLocalStorage.getItem).toHaveBeenCalledTimes(3);
-    expect(encryptPassword.decrypt).toHaveBeenCalled();
-    expect(decryptSecretKey).toHaveBeenCalled();
+    expect(signature).toBe('mockSignature');
+    expect(localStorage.getItem).toHaveBeenCalledTimes(3);
+    expect(encryptPassword.decrypt).toHaveBeenCalledWith(mockProjectId, mockEncryptedPassword);
     expect(generateKeypairFromSeedPhrase).toHaveBeenCalled();
-    expect(WhirlpoolContext.from).toHaveBeenCalled();
-    expect(buildWhirlpoolClient).toHaveBeenCalled();
+    expect(web3.sendAndConfirmTransaction).toHaveBeenCalled();
   });
 
   it('should throw an error if wallet information is missing', async () => {
-    mockLocalStorage.getItem.mockReset().mockReturnValue(null);
+    (window.localStorage.getItem as jest.Mock).mockReturnValue(null);
 
-    await expect(executeSwap(
-      {} as Connection,
-      {} as PublicKey,
-      {} as PublicKey,
-      {} as PublicKey,
-      {} as PublicKey,
-      '100'
-    )).rejects.toThrow('Wallet information not found in localStorage');
+    await expect(
+      executeSwap(
+        mockConnection,
+        mockPublicKey,
+        mockProgramId,
+        mockFromTokenAddress,
+        mockToTokenAddress,
+        mockAmount
+      )
+    ).rejects.toThrow('Wallet information not found in localStorage');
   });
 
   it('should throw an error if project ID is missing', async () => {
-    process.env.NEXT_PUBLIC_PROJECT_KEY = undefined;
-    mockLocalStorage.getItem
-      .mockReturnValueOnce('encrypted-seed-phrase')
-      .mockReturnValueOnce('wallet-public-key')
-      .mockReturnValueOnce('encrypted-password');
-  
-    await expect(executeSwap(
-      {} as Connection,
-      {} as PublicKey,
-      {} as PublicKey,
-      {} as PublicKey,
-      {} as PublicKey,
-      '100'
-    )).rejects.toThrow('There was an error getting the project ID');
+    delete process.env.NEXT_PUBLIC_PROJECT_KEY;
+
+    await expect(
+      executeSwap(
+        mockConnection,
+        mockPublicKey,
+        mockProgramId,
+        mockFromTokenAddress,
+        mockToTokenAddress,
+        mockAmount
+      )
+    ).rejects.toThrow('There was an error getting the project ID');
   });
+
+  // Add more test cases as needed...
 });

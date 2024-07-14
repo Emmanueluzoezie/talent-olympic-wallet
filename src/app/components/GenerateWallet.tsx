@@ -85,7 +85,7 @@ const GenerateWallet: React.FC<WalletCreationProps> = ({ onKeySet, projectKey })
                 id="confirmCheckbox"
                 checked={isConfirmed}
                 onChange={(e) => setIsConfirmed(e.target.checked)}
-                className="mr-2"
+                className="mr-2 bg-[#03634A]"
               />
               <label htmlFor="confirmCheckbox" className="text-[14px] primary-text-color">
                 I've written down my secret phrase
@@ -94,7 +94,7 @@ const GenerateWallet: React.FC<WalletCreationProps> = ({ onKeySet, projectKey })
             <button
               onClick={() => setStep('confirm')}
               disabled={!isConfirmed}
-              className={`mt-4 w-full p-2 rounded ${isConfirmed ? 'bg-blue-500 text-white' : 'bg-gray-600 text-gray-500'}`}
+              className={`mt-4 w-full p-2 rounded ${isConfirmed ? 'button-bgcolor button-textcolor' : 'bg-gray-600 text-gray-500'}`}
             >
               Continue
             </button>
@@ -110,10 +110,10 @@ const GenerateWallet: React.FC<WalletCreationProps> = ({ onKeySet, projectKey })
           <SeedPhraseInput seedPhrase={confirmPhrase} onChange={setConfirmPhrase} />
           {error && <p className="error">{error}</p>}
           {isConfirmPhraseComplete && (
-            <div className="flex justify-center px-8 mt-16">
+            <div className="flex justify-center px-8 mt-8">
               <button 
               onClick={handleConfirmPhrase}
-              className="mt-4 w-full p-2 rounded button-bgcolor button-textcolor font-semibold text-white"
+              className="mt-4 w-full p-2 rounded button-bgcolor button-textcolor font-semibold"
             >
               Confirm
             </button>

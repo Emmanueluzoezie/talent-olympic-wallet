@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { PublicKey, TokenBalance } from "@solana/web3.js";
+import { PublicKey, Signer, TokenBalance } from "@solana/web3.js";
 import { walletInterface } from '../lib/WalletInterface';
 
 export function useWallet() {
@@ -26,13 +26,13 @@ export function useWallet() {
     }
   }, []);
 
-  useEffect(() => {
-    updateWalletState();
-  }, [updateWalletState]);
 
-  const connect = useCallback(async (publicKey: string, signer: any) => {
-    walletInterface.setPublicKey(publicKey);
-    walletInterface.setSigner(signer);
+  const connect = useCallback(async (publicKey?: string, signer?: Signer) => {
+    if (publicKey && signer) {
+      await walletInterface.connect(publicKey, signer);
+    } else {
+      console.warn('Connection method without publicKey and signer not implemented');
+    }
     await updateWalletState();
   }, [updateWalletState]);
 
@@ -44,6 +44,17 @@ export function useWallet() {
   const changeNetwork = useCallback(async (newNetwork: string) => {
     walletInterface.setNetwork(newNetwork);
     await updateWalletState();
+  }, [updateWalletState]);
+
+  useEffect(() => {
+    const handleNetworkChange = () => {
+      updateWalletState();
+    };
+    window.addEventListener('walletNetworkChange', handleNetworkChange);
+
+    return () => {
+      window.removeEventListener('walletNetworkChange', handleNetworkChange);
+    };
   }, [updateWalletState]);
 
   return {

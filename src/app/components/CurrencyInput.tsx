@@ -23,11 +23,11 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
         <h2 className="font-semibold px-2 ">{selectedCurrency.symbol}</h2>
         <IoIosArrowDown className="text-[20px]" />
       </div>
-      <div className="flex flex-col items-center relative">
+      <div className="flex flex-col items-center relative text-white">
         {onMaxClick && (
           <div className=' absolute -top-5 flex justify-end w-[150px] pr-2 pb-1'>
             <button
-              className="text-[10px] rounded-l"
+              className="text-[10px] rounded-l secondary-text-color text-white"
               onClick={onMaxClick}
             >
              {balances[selectedCurrency.symbol]?.toFixed(4) || '0'} Max

@@ -3,10 +3,10 @@ import { Keypair } from '@solana/web3.js';
 import { IconType } from 'react-icons';
 
 export interface EmbeddedWalletProps {
-    rpcEndpoint?: string;
-    apiKey?: string;
+    mode: 'standalone' | 'embedded';
+    mainnetRpcEndpoint: string;
+    devnetRpcEndpoint: string;
     projectKey: string;
-
 }
 
 export interface WalletInfoProps {
@@ -71,4 +71,9 @@ export interface SeedPhraseInputProps {
     seedPhrase: string;
     onChange: (phrase: string) => void;
     disable?: boolean
+}
+
+export interface AddressActionsProps {
+    onBack: () => void;
+    mode: 'send' | 'receive';
 }

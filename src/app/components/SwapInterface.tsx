@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import CurrencyInput from './CurrencyInput';
 import CurrencyDropdown from './CurrencyDropDown';
 import { PublicKey } from '@solana/web3.js';
@@ -9,7 +9,7 @@ import { useWallet } from '../hook/useWallet';
 import { SelectTokenType } from '../types/Token';
 
 const SwapInterface = () => {
-  const { tokens, prices, balances } = useTokenContext();
+  const { tokens, balances } = useTokenContext();
   const { connection, publicKey } = useWallet();
   const [fromCurrency, setFromCurrency] = useState<SelectTokenType>({
     symbol: "SOL",
@@ -23,7 +23,6 @@ const SwapInterface = () => {
   const [toAmount, setToAmount] = useState<string>('');
   const [showFromDropdown, setShowFromDropdown] = useState<boolean>(false);
   const [showToDropdown, setShowToDropdown] = useState<boolean>(false);
-  const [inSufficient, setInSufficent] = useState<boolean>(false)
 
   const handleFromCurrencyClick = () => setShowFromDropdown(!showFromDropdown);
   const handleToCurrencyClick = () => setShowToDropdown(!showToDropdown);
@@ -50,12 +49,6 @@ const SwapInterface = () => {
       const formattedValue = value.includes('.') ? value.slice(0, value.indexOf('.') + 7) : value;
       setFromAmount(formattedValue);
     }
-    
-    if (balances === undefined || balances[fromCurrency.symbol] < Number(value)) {
-      setInSufficent(true);
-    } else {
-      setInSufficent(false);
-    }
   }
 
   const handleToCurrencySelect = (token: SelectTokenType) => {
@@ -70,9 +63,23 @@ const SwapInterface = () => {
     setFromAmount(balances[fromCurrency.symbol]?.toString() || '0');
   };
 
+  const insufficientFunds = useMemo(() => {
+    const balance = balances[fromCurrency.symbol] || 0;
+    return parseFloat(fromAmount) > balance;
+  }, [fromAmount, fromCurrency.symbol, balances]);
+
+  const isSwapDisabled = useMemo(() => {
+    return !fromAmount || insufficientFunds;
+  }, [fromAmount, insufficientFunds]);
+
   const handleSwap = useCallback(async () => {
     if (!publicKey) {
         alert('Please connect your wallet');
+        return;
+    }
+
+    if (insufficientFunds) {
+        alert('Insufficient funds');
         return;
     }
 
@@ -93,32 +100,30 @@ const SwapInterface = () => {
             new PublicKey(toToken.address),
             fromAmount
         );
-        console.log('Swap executed successfully:', signature);
-        // Update balances and UI here
     } catch (error) {
         console.error('Swap failed:', error);
         alert('Swap failed. Please try again.');
     }
-}, [connection, publicKey, tokens, fromCurrency, toCurrency, fromAmount]);
+}, [connection, publicKey, tokens, fromCurrency, toCurrency, fromAmount, insufficientFunds]);
 
   return (
     <div className='h-[500px] p-2 rounded'>
-      <div className='flex flex-col h-full'>
+      <div className='flex flex-col h-full px-4'>
         <div className='flex justify-center'>
           <h2 className='px-4 py-[1px] button-bgcolor rounded font-semibold button-textcolor'>Swap</h2>
         </div>
 
         <div className="relative flex-1">
           <div className="relative my-8">
-          <CurrencyInput
-          selectedCurrency={fromCurrency}
-          onCurrencyClick={handleFromCurrencyClick}
-          onInputChange={handleFromAmount}
-          amount={fromAmount}
-          onMaxClick={handleMaxClick}
-          inSufficient
-        />
-        {showFromDropdown && <CurrencyDropdown onSelect={handleFromCurrencySelect} tokens={filteredFromTokens} />}
+            <CurrencyInput
+              selectedCurrency={fromCurrency}
+              onCurrencyClick={handleFromCurrencyClick}
+              onInputChange={handleFromAmount}
+              amount={fromAmount}
+              onMaxClick={handleMaxClick}
+              inSufficient={insufficientFunds}
+            />
+            {showFromDropdown && <CurrencyDropdown onSelect={handleFromCurrencySelect} tokens={filteredFromTokens} />}
           </div>
 
           <div className="relative my-4">
@@ -134,7 +139,17 @@ const SwapInterface = () => {
         </div>
 
         <div className='p-2 pb-4'>
-          <button className={`py-2 rounded-xl w-full`} onClick={handleSwap}>Swap</button>
+          <button 
+            className={`py-2 rounded-xl w-full ${
+              isSwapDisabled 
+                ? 'layer-color cursor-not-allowed' 
+                : 'button-bgcolor hover:button-bgcolor'
+            }`} 
+            onClick={handleSwap}
+            disabled={isSwapDisabled}
+          >
+            Swap
+          </button>
         </div>
       </div>
     </div>

@@ -12,12 +12,13 @@ export const storeKeyPair = async (keypair: Keypair, seedPhrase: string, passwor
     throw error;
   }
 };
+
 export const storePassword = async (projectKey: string, password: string) => {
   try {
-    const encryptedPassword = await encryptPassword.encrypt(projectKey, password);
+    const encryptedPassword = encryptPassword.encrypt(projectKey, password);
     localStorage.setItem('encryptedPassword', encryptedPassword);
   } catch (error) {
-    console.error("Failed to encrypt seed phrase:", error);
+    console.error("Failed to encrypt password:", error);
     throw error;
   }
 };

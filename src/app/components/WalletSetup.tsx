@@ -3,11 +3,18 @@ import { Keypair } from '@solana/web3.js';
 import * as bip39 from 'bip39';
 import ImportWallet from './ImportWallet';
 import GenerateWallet from './GenerateWallet';
-import { WalletSetupProps } from '../types/Wallet';
 import { decryptSecretKey } from '../utils/Encryption';
+import { encryptPassword } from '../utils/PasswordEncryption';
+import SeedPhraseInput from './SecretPhraseInput';
+
+// Define WalletSetupProps type
+interface WalletSetupProps {
+  onKeySet: (keypair: Keypair) => void;
+  projectKey: string;
+}
 
 const MAX_ATTEMPTS = 5;
-const LOCKOUT_TIME = 15 * 60 * 1000;
+const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes in milliseconds
 
 const WalletSetup: React.FC<WalletSetupProps> = ({ onKeySet, projectKey }) => {
   const [setupMode, setSetupMode] = useState<'stored' | 'import' | 'generate' | null>(null);
@@ -24,58 +31,97 @@ const WalletSetup: React.FC<WalletSetupProps> = ({ onKeySet, projectKey }) => {
   const handleUseStoredKey = useCallback(async () => {
     const storedPublicKey = localStorage.getItem('walletPublicKey');
     const encryptedSeedPhrase = localStorage.getItem('encryptedSeedPhrase');
-
-    if (!storedPublicKey || !encryptedSeedPhrase) {
-      setError('No stored key found. Please create a new wallet or import an existing one.');
+    const encryptedPassword = localStorage.getItem('encryptedPassword');
+  
+    if (!storedPublicKey || !encryptedSeedPhrase || !encryptedPassword) {
+      setError('No stored key or password found. Please create a new wallet or import an existing one.');
       return;
     }
-
+  
     const currentTime = Date.now();
     if (currentTime - lastAttemptTime < LOCKOUT_TIME && attemptCount >= MAX_ATTEMPTS) {
       setError(`Too many failed attempts. Please try again in ${Math.ceil((LOCKOUT_TIME - (currentTime - lastAttemptTime)) / 60000)} minutes.`);
       return;
     }
-
+  
     try {
+      const decryptedStoredPassword = encryptPassword.decrypt(projectKey, encryptedPassword);
+  
+      if (password !== decryptedStoredPassword) {
+        throw new Error('Incorrect password');
+      }
+      
       const decryptedSeedPhrase = await decryptSecretKey(encryptedSeedPhrase, password);
+  
+      if (!bip39.validateMnemonic(decryptedSeedPhrase)) {
+        throw new Error('Invalid seed phrase');
+      }
+  
       const seed = await bip39.mnemonicToSeed(decryptedSeedPhrase);
       const keypair = Keypair.fromSeed(seed.slice(0, 32));
+  
+      if (keypair.publicKey.toString() !== storedPublicKey) {
+        throw new Error('Generated public key does not match stored key');
+      }
+  
       onKeySet(keypair);
       setAttemptCount(0);
     } catch (error) {
-      console.error('Failed to decrypt seed phrase:', error);
+      console.error('Failed to decrypt or validate:', error);
       const newAttemptCount = attemptCount + 1;
       setAttemptCount(newAttemptCount);
       setLastAttemptTime(currentTime);
       if (newAttemptCount >= MAX_ATTEMPTS) {
         setError(`Maximum attempts reached. Please try again in ${LOCKOUT_TIME / 60000} minutes.`);
       } else {
-        setError(`Incorrect password. ${MAX_ATTEMPTS - newAttemptCount} attempts remaining.`);
+        setError(`Incorrect password or invalid data. ${MAX_ATTEMPTS - newAttemptCount} attempts remaining.`);
       }
     }
-  }, [password, attemptCount, lastAttemptTime, onKeySet]);
+  }, [password, attemptCount, lastAttemptTime, onKeySet, projectKey]);
 
   const renderStoredKeyMode = () => (
     <div>
-      <p>Welcome Back</p>
-      <input
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder="Enter your password"
-      />
-      <button onClick={handleUseStoredKey}>Use Stored Key</button>
-      {error && <p className="error">{error}</p>}
+      <div className='px-6'>
+        <h2 className='primary-text-color font-semibold text-[22px] pt-10 pb-6'>Welcome back</h2>
+        <h2 className='pb-36 secondary-text-color font-semibold text-center text-[18px]'>Enter your password</h2>
+        <label  className='primary-text-color pl-3 text-[14px]'>Password: </label>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          className='w-full p-2 outline-none rounded text-black'
+        />
+      </div>
+      {error && <p className='text-red-600 pl-6 text-[14px]'>{error}</p>}
+      <div className='flex justify-center px-6 mt-10'>
+        <button 
+          disabled={password.length <= 0} 
+          className={`p-2 w-full rounded ${password.length > 0 ? "button-bgcolor button-textcolor" : "layer-color text-zinc-600"}`} 
+          onClick={handleUseStoredKey}
+        >
+          Continue
+        </button>
+      </div>
     </div>
   );
 
   const renderSetupOptions = () => (
     <div className="relative h-full">
       <h2 className='primary-text-color text-[25px] font-bold text-center py-10'>Set up your wallet</h2>
-
       <div className='absolute bottom-0 w-full flex justify-center flex-col items-center p-6 space-y-4'>
-        <button className='w-full button-bgcolor button-textcolor py-2 rounded font-semibold' onClick={() => setSetupMode('generate')}>Generate New Wallet</button>
-        <button className='w-full primary-text-color underline-[#A9A9A9] underline' onClick={() => setSetupMode('import')}>Import Existing Wallet</button>
+        <button 
+          className='w-full button-bgcolor button-textcolor py-2 rounded font-semibold' 
+          onClick={() => setSetupMode('generate')}
+        >
+          Generate New Wallet
+        </button>
+        <button 
+          className='w-full primary-text-color underline-[#A9A9A9] underline' 
+          onClick={() => setSetupMode('import')}
+        >
+          Import Existing Wallet
+        </button>
       </div>
     </div>
   );

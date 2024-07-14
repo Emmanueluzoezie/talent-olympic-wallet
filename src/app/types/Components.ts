@@ -1,5 +1,4 @@
 import { SelectTokenType, SwapResult, Token } from './Token';
-import { SwapParams } from './Swap';
 import { Keypair } from '@solana/web3.js';
 import { IconType } from 'react-icons';
 
@@ -62,4 +61,14 @@ export interface CurrencyDropdownProps {
 
 export interface TokenDetailsProps {
     symbol: string;
+}
+
+export interface GetStartedProps {
+    onGetStarted: () => void;
+}
+
+export interface SeedPhraseInputProps {
+    seedPhrase: string;
+    onChange: (phrase: string) => void;
+    disable?: boolean
 }

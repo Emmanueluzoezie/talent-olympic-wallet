@@ -92,7 +92,6 @@ class WalletInterface {
                 }
             };
         } catch (error) {
-            console.error("Error fetching token balance:", error);
             return {
                 mint: mintAddress,
                 accountIndex: 0,

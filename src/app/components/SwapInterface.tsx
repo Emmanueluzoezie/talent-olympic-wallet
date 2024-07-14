@@ -45,10 +45,13 @@ const SwapInterface = () => {
   };
 
   const handleFromAmount = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setFromAmount(newValue);
+    const value = e.target.value;
+    if (value === '' || /^\d*\.?\d*$/.test(value)){
+      const formattedValue = value.includes('.') ? value.slice(0, value.indexOf('.') + 7) : value;
+      setFromAmount(formattedValue);
+    }
     
-    if (balances === undefined || balances[fromCurrency.symbol] < Number(newValue)) {
+    if (balances === undefined || balances[fromCurrency.symbol] < Number(value)) {
       setInSufficent(true);
     } else {
       setInSufficent(false);
@@ -99,14 +102,14 @@ const SwapInterface = () => {
 }, [connection, publicKey, tokens, fromCurrency, toCurrency, fromAmount]);
 
   return (
-    <div className='h-[500px] p-2'>
+    <div className='h-[500px] p-2 rounded'>
       <div className='flex flex-col h-full'>
         <div className='flex justify-center'>
-          <h2 className='px-4 py-1 bg-zinc-200'>Swap</h2>
+          <h2 className='px-4 py-[1px] button-bgcolor rounded font-semibold button-textcolor'>Swap</h2>
         </div>
 
         <div className="relative flex-1">
-          <div className="relative my-4">
+          <div className="relative my-8">
           <CurrencyInput
           selectedCurrency={fromCurrency}
           onCurrencyClick={handleFromCurrencyClick}
@@ -131,7 +134,7 @@ const SwapInterface = () => {
         </div>
 
         <div className='p-2 pb-4'>
-          <button className='bg-zinc-300 py-2 rounded-xl w-full' onClick={handleSwap}>Swap</button>
+          <button className={`py-2 rounded-xl w-full`} onClick={handleSwap}>Swap</button>
         </div>
       </div>
     </div>

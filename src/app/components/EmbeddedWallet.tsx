@@ -28,7 +28,7 @@ const EmbeddedWallet: React.FC<EmbeddedWalletProps> = ({ rpcEndpoint, apiKey, pr
   }, []);
 
   return (
-    <div className="border-2">
+    <div className="backgroundColor rounded pt-3">
       {activeComponent === 'setup' ? (
         <WalletSetup onKeySet={handleKeySet} projectKey={projectKey} />
       ) : (
@@ -38,7 +38,7 @@ const EmbeddedWallet: React.FC<EmbeddedWalletProps> = ({ rpcEndpoint, apiKey, pr
             {activeComponent === 'wallet' && <WalletScreen setActiveComponent={setActiveComponent} activeComponent={activeComponent}/>}
             {activeComponent === 'swap' && <SwapInterface />}
           </div>
-          <div className="flex justify-around bg-zinc-400">
+          <div className="flex justify-around layer-color ">
             <Button title='Wallet' setActiveComponent={setActiveComponent} Icon={PiWalletBold} activeComponent={activeComponent} />
             <Button title='Swap' setActiveComponent={setActiveComponent} Icon={RiSwap2Fill} activeComponent={activeComponent} />
             <Button title='Setting' setActiveComponent={setActiveComponent} Icon={IoSettingsOutline} activeComponent={activeComponent} />

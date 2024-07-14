@@ -14,8 +14,8 @@ const TokenDetails = () => {
   return (
     <>
       {tokens.map(token => (
-        <div key={token.symbol} className='border-2 h-[65px] my-4 rounded-md p-2'>
-          <div className='flex justify-between items-center'>
+        <div key={token.symbol} className='h-[65px] my-4 layer-color rounded-md p-2'>
+          <div className='flex justify-between items-center primary-text-color'>
             <div className='flex items-center'>
               <Image 
                 src={token.image ||""} 

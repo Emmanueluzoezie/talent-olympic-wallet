@@ -70,15 +70,18 @@ const WalletSetup: React.FC<WalletSetupProps> = ({ onKeySet, projectKey }) => {
   );
 
   const renderSetupOptions = () => (
-    <div className="setup-options">
-      <button onClick={() => setSetupMode('import')}>Import Existing Wallet</button>
-      <button onClick={() => setSetupMode('generate')}>Generate New Wallet</button>
+    <div className="relative h-full">
+      <h2 className='primary-text-color text-[25px] font-bold text-center py-10'>Set up your wallet</h2>
+
+      <div className='absolute bottom-0 w-full flex justify-center flex-col items-center p-6 space-y-4'>
+        <button className='w-full button-bgcolor button-textcolor py-2 rounded font-semibold' onClick={() => setSetupMode('generate')}>Generate New Wallet</button>
+        <button className='w-full primary-text-color underline-[#A9A9A9] underline' onClick={() => setSetupMode('import')}>Import Existing Wallet</button>
+      </div>
     </div>
   );
 
   return (
-    <div className="border-2 h-[500px]">
-      <h2>Wallet Setup</h2>
+    <div className="h-[500px] w-full">
       {setupMode === 'stored' && renderStoredKeyMode()}
       {setupMode === null && renderSetupOptions()}
       {setupMode === 'import' && <ImportWallet onKeySet={onKeySet} projectKey={projectKey} />}

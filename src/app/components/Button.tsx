@@ -5,7 +5,7 @@ import { ButtonsProps } from '../types/Components'
 const Button: React.FC<ButtonsProps> = ({activeComponent, title, setActiveComponent, Icon }) => {
 
     return (
-        <button className={`text-[30px] p-3 ${activeComponent === title.toLocaleLowerCase()&& "text-red-400 border-t-4 "}`} onClick={() => setActiveComponent(title.toLowerCase() as "wallet" | "swap" | "setting")}>
+        <button className={`text-[30px] p-3 primary-text-color ${activeComponent === title.toLocaleLowerCase()&& "text-[#59E460] border-t-[3px] border-[#A9A9A9]"}`} onClick={() => setActiveComponent(title.toLowerCase() as "wallet" | "swap" | "setting")}>
             <Icon />
         </button>
     )

@@ -4,8 +4,6 @@ import { IoIosArrowDown } from 'react-icons/io';
 import { CurrencyInputProps } from '../types/Components';
 import { useTokenContext } from '../context/TokenContext';
 
-
-
 const CurrencyInput: React.FC<CurrencyInputProps> = ({
   selectedCurrency,
   onCurrencyClick,
@@ -17,12 +15,12 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
     const { balances } = useTokenContext();
 
   return (
-    <div className="border-2 py-2 flex items-center justify-between relative">
-      <div className="border-2 flex items-center space-x-2 px-3 py-1 cursor-pointer" onClick={onCurrencyClick}>
-        <div className="w-8 h-8 border-2">
+    <div className="layer-color rounded flex items-center justify-between relative">
+      <div className=" flex items-center primary-text-color space-x-2 px-3 py-3 cursor-pointer" onClick={onCurrencyClick}>
+        <div className="w-8 h-8">
           <Image src={`${selectedCurrency.image}`} alt="Currency" className="w-full h-full" width={20} height={20} />
         </div>
-        <h2 className="font-semibold px-2">{selectedCurrency.symbol}</h2>
+        <h2 className="font-semibold px-2 ">{selectedCurrency.symbol}</h2>
         <IoIosArrowDown className="text-[20px]" />
       </div>
       <div className="flex flex-col items-center relative">
@@ -37,7 +35,7 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
           </div>
         )}
         <input
-          className={`border-2 text-[20px] font-semibold text-center w-[150px] outline-none ${onMaxClick ? 'rounded-r' : 'rounded'} ${disabled ? 'bg-gray-200' : ''}`}
+          className={`text-[20px] pr-4 font-semibold py-3 layer-color text-end w-[150px] outline-none primary-text-color ${onMaxClick ? 'rounded-r' : 'rounded'} ${disabled ? '' : ''}`}
           type="text"
           placeholder="0"
           value={amount}

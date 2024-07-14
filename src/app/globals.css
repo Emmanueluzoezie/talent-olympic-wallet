@@ -1,3 +1,26 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    .layer-color {
+        background-color: #242D35;
+    }
+    .backgroundColor {
+        background-color: #13161E;
+    }
+
+    .primary-text-color {
+        color: #D2D2D2;
+    }
+    .secondary-text-color {
+        color: #A9A9A9;
+    }
+    .button-bgcolor {
+        background-color: #59E460;
+    }
+
+    .button-textcolor {
+        color: #03634A;
+    }
+}

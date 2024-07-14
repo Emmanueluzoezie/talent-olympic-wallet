@@ -1,8 +1,13 @@
-import { PublicKey, TransactionInstruction, Connection, Transaction, sendAndConfirmTransaction, VersionedTransaction } from '@solana/web3.js';
+import { PublicKey, TransactionInstruction, Connection, Transaction, sendAndConfirmTransaction, VersionedTransaction, Keypair } from '@solana/web3.js';
 import { Program, AnchorProvider, web3, Wallet, BN } from '@project-serum/anchor';
 import WhirlpoolIDL from '../idl/whirlpool_idl';
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { ORCA_WHIRLPOOL_PROGRAM_ID, PDAUtil, TickArrayUtil, WhirlpoolContext, buildWhirlpoolClient } from '@orca-so/whirlpools-sdk';
+import { encryptPassword } from './PasswordEncryption';
+import { decryptSecretKey } from './Encryption';
+import * as bip39 from 'bip39';
+import { ed25519 } from '@noble/curves/ed25519';
+import generateKeypairFromSeedPhrase from './getKeypair';
 
 class NodeWallet implements Wallet {
     constructor(readonly payer: web3.Keypair) {}
@@ -74,9 +79,32 @@ export async function executeSwap(
     toTokenAddress: PublicKey,
     amount: string
 ) {
-    const amountNumber = parseFloat(amount) * 1e6; // Assuming 6 decimal places
+    const amountNumber = parseFloat(amount) * 1e6;
 
-    const ctx = WhirlpoolContext.from(connection, new NodeWallet(web3.Keypair.generate()), ORCA_WHIRLPOOL_PROGRAM_ID);
+    const encryptedSeedPhrase = localStorage.getItem('encryptedSeedPhrase');
+    const publicKeyString = localStorage.getItem('walletPublicKey');
+    const encryptedPassword = localStorage.getItem('encryptedPassword');
+    const projectId = process.env.NEXT_PUBLIC_PROJECT_KEY
+
+    if (!encryptedSeedPhrase || !publicKeyString || !encryptedPassword) {
+        throw new Error('Wallet information not found in localStorage');
+    }
+    if (!projectId) {
+        throw new Error('There was an error getting the project ID');
+    }
+
+    const password = await encryptPassword.decrypt(projectId, encryptedPassword);
+
+    const seedPhrase = await decryptSecretKey(encryptedSeedPhrase, password);
+
+    const privateKey = await generateKeypairFromSeedPhrase(seedPhrase);
+
+    if (!privateKey) {
+        throw new Error('There was an error generating the private key');
+    }
+    const keypair = Keypair.fromSecretKey(Uint8Array.from(privateKey.secretKey));
+    const wallet = new NodeWallet(keypair);
+    const ctx = WhirlpoolContext.from(connection, wallet, ORCA_WHIRLPOOL_PROGRAM_ID);
     const client = buildWhirlpoolClient(ctx);
 
     const whirlpoolPda = PDAUtil.getWhirlpool(ORCA_WHIRLPOOL_PROGRAM_ID, programId, fromTokenAddress, toTokenAddress, 64);
@@ -84,7 +112,7 @@ export async function executeSwap(
 
     const whirlpoolData = await client.getPool(whirlpoolPubKey);
 
-const aToB = fromTokenAddress.equals(whirlpoolData.getTokenAInfo().mint);
+    const aToB = fromTokenAddress.equals(whirlpoolData.getTokenAInfo().mint);
 
     const tickArrays = TickArrayUtil.getTickArrayPDAs(
         whirlpoolData.getData().tickCurrentIndex,
@@ -97,7 +125,7 @@ const aToB = fromTokenAddress.equals(whirlpoolData.getTokenAInfo().mint);
 
     const accounts = {
         tokenProgram: TOKEN_PROGRAM_ID,
-        tokenAuthority: publicKey,
+        tokenAuthority: keypair.publicKey,
         whirlpool: whirlpoolPubKey,
         tokenOwnerAccountA: fromTokenAddress,
         tokenVaultA: whirlpoolData.getData().tokenVaultA,
@@ -111,20 +139,19 @@ const aToB = fromTokenAddress.equals(whirlpoolData.getTokenAInfo().mint);
 
     const args = {
         amount: amountNumber,
-        otherAmountThreshold: 0, // Set a minimum amount to receive
-        sqrtPriceLimit: 0, // Set to 0 for no limit
+        otherAmountThreshold: 0,
+        sqrtPriceLimit: 0,
         amountSpecifiedIsInput: true,
         aToB: fromTokenAddress.equals(whirlpoolData.getData().tokenMintA)
     };
 
-    const wallet = new NodeWallet(web3.Keypair.generate());
     const provider = new AnchorProvider(connection, wallet, AnchorProvider.defaultOptions());
     const program = new Program(WhirlpoolIDL, programId, provider);
 
     const swapIx = await createSwapInstruction(program, accounts, args);
 
     const transaction = new Transaction().add(swapIx);
-    transaction.feePayer = publicKey;
+    transaction.feePayer = keypair.publicKey;
 
     const signedTransaction = await wallet.signTransaction(transaction);
 

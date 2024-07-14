@@ -1,1 +1,0 @@
-// For all the test concerning Embedded wallet

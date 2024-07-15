@@ -40,7 +40,7 @@ const SeedPhraseInput: React.FC<SeedPhraseInputProps> = ({ seedPhrase, onChange,
           disabled={disable}
           value={word}
           onChange={(e: ChangeEvent<HTMLInputElement>) => handleWordChange(index, e.target.value)}
-          className={`w-full p-2 text-center outline-none rounded ${disable? "text-white": ""}`}
+          className={`w-full p-2 text-zinc-500 bg-white text-center outline-none rounded ${disable? "text-zink-600": ""}`}
           placeholder={`Word ${index + 1}`}
           onPaste={index === 0 ? handlePaste : undefined}
         />

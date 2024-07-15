@@ -1,6 +1,6 @@
-import { walletInterface } from "@/app/lib/WalletInterface";
 import { Transaction } from "@solana/web3.js";
 import { NextResponse } from "next/server";
+import { walletInterface } from "../../lib/WalletInterface";
 
 export async function POST(request: Request) {
     const { action, params } = await request.json()
@@ -14,8 +14,8 @@ export async function POST(request: Request) {
         return NextResponse.json({ message: 'Public key set successfully' })
       case 'getBalance':
         try {
-          const balance = await walletInterface.getBalance()
-          return NextResponse.json({ balance })
+          // const balance = await walletInterface.getBalance()
+          return NextResponse.json({ })
         } catch (error) {
           return NextResponse.json({ error: (error as Error).message }, { status: 400 })
         }

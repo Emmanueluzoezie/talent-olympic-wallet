@@ -31,13 +31,13 @@ const WalletScreen: React.FC<WalletScreenProps> = ({ activeComponent, setActiveC
           <h2 className='pb-5 text-[35px] primary-text-color text-center'>$ {totalBalanceInUSDC}</h2>
           <div className='flex items-center space-x-4 px-4'>
             <button 
-              className='w-full bg-zinc-300 py-1 rounded font-semibold'
+              className='w-full layer-color py-1 rounded font-semibold'
               onClick={() => setAddressMode('receive')}
             >
               Receive
             </button>
             <button 
-              className='w-full bg-zinc-300 py-1 rounded font-semibold'
+              className='w-full layer-color py-1 rounded font-semibold'
               onClick={() => setAddressMode('send')}
             >
               Send

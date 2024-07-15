@@ -29,53 +29,66 @@ const WalletSetup: React.FC<WalletSetupProps> = ({ onKeySet, projectKey }) => {
   }, []);
 
   const handleUseStoredKey = useCallback(async () => {
+
     const storedPublicKey = localStorage.getItem('walletPublicKey');
     const encryptedSeedPhrase = localStorage.getItem('encryptedSeedPhrase');
     const encryptedPassword = localStorage.getItem('encryptedPassword');
-  
+
     if (!storedPublicKey || !encryptedSeedPhrase || !encryptedPassword) {
-      setError('No stored key or password found. Please create a new wallet or import an existing one.');
-      return;
+        console.error('Missing required data in localStorage');
+        setError('No stored key or password found. Please create a new wallet or import an existing one.');
+        return;
     }
-  
+
     const currentTime = Date.now();
     if (currentTime - lastAttemptTime < LOCKOUT_TIME && attemptCount >= MAX_ATTEMPTS) {
-      setError(`Too many failed attempts. Please try again in ${Math.ceil((LOCKOUT_TIME - (currentTime - lastAttemptTime)) / 60000)} minutes.`);
-      return;
+        setError(`Too many failed attempts. Please try again in ${Math.ceil((LOCKOUT_TIME - (currentTime - lastAttemptTime)) / 60000)} minutes.`);
+        return;
     }
-  
+
     try {
-      const decryptedStoredPassword = encryptPassword.decrypt(projectKey, encryptedPassword);
-  
-      if (password !== decryptedStoredPassword) {
-        throw new Error('Incorrect password');
+        const decryptedStoredPassword = encryptPassword.decrypt(projectKey, encryptedPassword);
+        if (password !== decryptedStoredPassword) {
+            console.error("Password mismatch");
+            throw new Error('Incorrect password');
+        }
+
+        const decryptedSeedPhrase = await decryptSecretKey(encryptedSeedPhrase, password);
+
+        if (!bip39.validateMnemonic(decryptedSeedPhrase)) {
+          console.error("Invalid seed phrase");
+          throw new Error('Invalid seed phrase');
       }
-      
-      const decryptedSeedPhrase = await decryptSecretKey(encryptedSeedPhrase, password);
-  
-      if (!bip39.validateMnemonic(decryptedSeedPhrase)) {
-        throw new Error('Invalid seed phrase');
-      }
-  
       const seed = await bip39.mnemonicToSeed(decryptedSeedPhrase);
       const keypair = Keypair.fromSeed(seed.slice(0, 32));
-  
-      if (keypair.publicKey.toString() !== storedPublicKey) {
-        throw new Error('Generated public key does not match stored key');
-      }
-  
+      
       onKeySet(keypair);
-      setAttemptCount(0);
+        if (keypair.publicKey.toString() !== storedPublicKey) {
+            console.error("Public key mismatch");
+            throw new Error('Generated public key does not match stored key');
+        }
+
+        onKeySet(keypair);
+
+        setAttemptCount(0);
+
     } catch (error) {
-      console.error('Failed to decrypt or validate:', error);
-      const newAttemptCount = attemptCount + 1;
-      setAttemptCount(newAttemptCount);
-      setLastAttemptTime(currentTime);
-      if (newAttemptCount >= MAX_ATTEMPTS) {
-        setError(`Maximum attempts reached. Please try again in ${LOCKOUT_TIME / 60000} minutes.`);
-      } else {
-        setError(`Incorrect password or invalid data. ${MAX_ATTEMPTS - newAttemptCount} attempts remaining.`);
-      }
+        console.error('Failed to decrypt or validate:', error);
+        
+        const newAttemptCount = attemptCount + 1;
+        setAttemptCount(newAttemptCount);
+        setLastAttemptTime(currentTime);
+
+        if (newAttemptCount >= MAX_ATTEMPTS) {
+            setError(`Maximum attempts reached. Please try again in ${LOCKOUT_TIME / 60000} minutes.`);
+        } else {
+            setError(`Incorrect password or invalid data. ${MAX_ATTEMPTS - newAttemptCount} attempts remaining.`);
+        }
+
+        if (error instanceof Error) {
+            console.error('Error details:', error.message);
+            console.error('Stack trace:', error.stack);
+        }
     }
   }, [password, attemptCount, lastAttemptTime, onKeySet, projectKey]);
 
@@ -96,7 +109,7 @@ const WalletSetup: React.FC<WalletSetupProps> = ({ onKeySet, projectKey }) => {
       {error && <p className='text-red-600 pl-6 text-[14px]'>{error}</p>}
       <div className='flex justify-center px-6 mt-10'>
         <button 
-          disabled={password.length <= 0} 
+          // disabled={password.length <= 0} 
           className={`p-2 w-full rounded ${password.length > 0 ? "button-bgcolor button-textcolor" : "layer-color text-zinc-600"}`} 
           onClick={handleUseStoredKey}
         >

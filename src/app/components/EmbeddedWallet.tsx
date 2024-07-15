@@ -1,7 +1,6 @@
 "use client"
 import React, { useState, MouseEvent, useCallback, useEffect } from 'react';
 import { useWallet } from '../hook/useWallet';
-import { useTheme } from './ThemeContext';
 import WalletScreen from './WalletScreen';
 import SwapInterface from './SwapInterface';
 import Setting from './Setting';
@@ -12,6 +11,7 @@ import { IoSettingsOutline } from "react-icons/io5";
 import WalletSetup from './WalletSetup';
 import { Keypair } from '@solana/web3.js';
 import { walletInterface } from '../lib/WalletInterface';
+import { useTheme } from '../context/ThemeContext';
 
 interface EmbeddedWalletProps {
   mode: 'standalone' | 'embedded';
@@ -55,10 +55,9 @@ const EmbeddedWallet: React.FC<EmbeddedWalletProps> = ({
     disconnect();
   };
 
-  const handleKeySet = (keypair: Keypair) => {
+  const handleKeySet = useCallback((keypair: Keypair) => {
     connect(keypair.publicKey.toString(), keypair);
-    setActiveComponent('wallet');
-  };
+  }, [connect]);
 
   const handleNetworkChange = useCallback((newNetwork: 'devnet' | 'mainnet-beta') => {
     changeNetwork(newNetwork);

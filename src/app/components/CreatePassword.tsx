@@ -36,7 +36,7 @@ const CreatePassword: React.FC<PasswordFormProps> = ({ password, setPassword, pr
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className='w-full p-2 outline-none rounded'
+          className='w-full p-2 text-black  outline-none rounded'
           minLength={8}
         />
       </div>
@@ -47,7 +47,7 @@ const CreatePassword: React.FC<PasswordFormProps> = ({ password, setPassword, pr
           id="confirmPassword"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          className='w-full p-2 outline-none rounded'
+          className='w-full p-2 text-black  outline-none rounded'
           required
         />
       </div>

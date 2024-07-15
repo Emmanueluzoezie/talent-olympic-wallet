@@ -1,5 +1,7 @@
 # Embedded Solana Wallet
 
+Video - https://www.loom.com/share/45237bdc66524f5fb6baeec9b34b70a6
+
 ## Overview
 
 This project is an embeddable Solana wallet that can be easily integrated into web applications. It provides a user-friendly interface for managing Solana tokens, performing swaps, and interacting with the Solana blockchain. The wallet supports both standalone and embedded modes, making it versatile for various use cases.

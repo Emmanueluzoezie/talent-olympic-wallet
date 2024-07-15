@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Embedded Solana Wallet
 
-## Getting Started
+## Overview
 
-First, run the development server:
+This project is an embeddable Solana wallet that can be easily integrated into web applications. It provides a user-friendly interface for managing Solana tokens, performing swaps, and interacting with the Solana blockchain. The wallet supports both standalone and embedded modes, making it versatile for various use cases.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Wallet Creation**: Users can generate a new wallet or import an existing one using a seed phrase.
+- **Secure Storage**: Encrypts and stores the user's seed phrase locally, ensuring security.
+- **Token Management**: View balances of SOL and SPL tokens.
+- **Token Swaps**: Integrated swap functionality for exchanging tokens.
+- **Network Switching**: Support for both Mainnet and Devnet, with easy network switching.
+- **Responsive Design**: Works seamlessly on both desktop and mobile devices.
+- **Customizable Theming**: Easily adaptable to match your application's design.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Installation
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+import { EmbeddedWallet } from '@your-org/embedded-solana-wallet';
 
-## Learn More
+ <EmbeddedWallet 
+        mode="embedded"
+        mainnetRpcEndpoint="https://api.mainnet-beta.solana.com"
+        devnetRpcEndpoint="https://api.devnet.solana.com"
+        projectKey="your-project-key"
+      />
 
-To learn more about Next.js, take a look at the following resources:
+ <EmbeddedWallet 
+        mode="standalone"
+        mainnetRpcEndpoint="your mainnet rpc"
+        devnetRpcEndpoint="hyour devnet rpc"
+        projectKey="your-project-key"
+      />
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Props
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+mode: 'standalone' | 'embedded' - Determines how the wallet is displayed.
+mainnetRpcEndpoint: String - RPC endpoint for Solana mainnet.
+devnetRpcEndpoint: String - RPC endpoint for Solana devnet.
+projectKey: String - Your project's unique key for encryption purposes.
 
-## Deploy on Vercel
+Components
+EmbeddedWallet
+The main component that orchestrates the wallet functionality.
+WalletSetup
+Handles the initial wallet setup, including creation and import processes.
+WalletScreen
+Displays the main wallet interface, showing balances and transaction options.
+SwapInterface
+Provides the interface for token swaps.
+Setting
+Allows users to change settings like the network (mainnet/devnet).
+Security
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Passwords and seed phrases are encrypted before storage.
+Decryption occurs client-side to ensure sensitive data never leaves the user's device.
+Implements a lockout mechanism to prevent brute-force attacks.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Customization
+The wallet's appearance can be customized using the ThemeProvider. Modify colors, fonts, and other styles to match your application's design.

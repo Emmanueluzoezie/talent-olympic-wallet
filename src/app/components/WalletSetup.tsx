@@ -67,9 +67,6 @@ const WalletSetup: React.FC<WalletSetupProps> = ({ onKeySet, projectKey }) => {
             console.error("Public key mismatch");
             throw new Error('Generated public key does not match stored key');
         }
-
-        onKeySet(keypair);
-
         setAttemptCount(0);
 
     } catch (error) {

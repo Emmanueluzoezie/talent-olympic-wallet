@@ -56,6 +56,7 @@ const EmbeddedWallet: React.FC<EmbeddedWalletProps> = ({
   };
 
   const handleKeySet = useCallback((keypair: Keypair) => {
+    setActiveComponent("wallet")
     connect(keypair.publicKey.toString(), keypair);
   }, [connect]);
 
